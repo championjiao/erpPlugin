@@ -19,7 +19,6 @@ public class ErpOrderDaoImpl implements ErpOrderDao {
     @Resource
     public SqlSessionTemplate sqlSession;
 
-    //test
     @Override
     public List<ErpOrderDo> queryErpOrder4AfterDate(String beginDate, String endDate) {
         Map<String, Object> map = new HashMap<String, Object>();
