@@ -15,13 +15,11 @@ import java.util.Map;
 @Repository("erpOrderDao")
 public class ErpOrderDaoImpl implements ErpOrderDao {
 
-    //test
-    //test
-    //test
     @Value("orderMapper_${erpType}") private String erpType;
     @Resource
     public SqlSessionTemplate sqlSession;
 
+    //test
     @Override
     public List<ErpOrderDo> queryErpOrder4AfterDate(String beginDate, String endDate) {
         Map<String, Object> map = new HashMap<String, Object>();
