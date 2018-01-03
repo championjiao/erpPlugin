@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="memberMapper_puan">
+
+    <resultMap id="cardDocMap" type="com.qw.erp.eneity.ErpCardInfoDo">
+        <result property="cardId"                   column="INSIDERID"                  jdbcType="VARCHAR"/>
+        <result property="cardTypeId"               column="INSCARDTYPEID"              jdbcType="VARCHAR"/>
+        <result property="cardCode"                 column="INSIDERCARDNO"              jdbcType="VARCHAR"/>
+        <result property="score"                    column="INTEGRAL"                   jdbcType="NUMERIC"/>
+        <result property="mobile"                   column="MOBILE"                     jdbcType="VARCHAR"/>
+        <result property="birthday"                 column="BIRTHDATE"                  jdbcType="VARCHAR"/>
+        <result property="gender"                   column="SEX"                        jdbcType="VARCHAR"/>
+        <result property="name"                     column="INSIDERNAME"                jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="card_columns">
+        G.INSIDERID,G.INSCARDTYPEID,G.INSIDERCARDNO,G.INSIDERNAME,G.MOBILE,
+        G.BIRTHDATE,DECODE(G.SEX,1,'男','女') AS SEX, G.INTEGRAL
+    </sql>
+
+
+    <select id="queryUnCardInfo" parameterType="java.lang.String" resultMap="cardDocMap">
+        SELECT  <include refid="card_columns" />
+        FROM GPCS_INSIDER G
+        WHERE G.USESTATUS = 5
+        AND G.SEX IS NULL
+        AND G.INSCARDTYPEID = #{kachId}
+        AND G.MOBILE IS NULL
+        AND placepointid=7759
+        AND insidercardno between '0278000001' and '0278999999'
+        AND ROWNUM &lt;= 1
+    </select>
+
+    <select id="queryCardInfoDoByMobile" parameterType="java.lang.String" resultMap="cardDocMap">
+        SELECT  <include refid="card_columns" />
+        FROM GPCS_INSIDER G
+        WHERE G.MOBILE = #{mobile} AND G.USESTATUS = 1
+    </select>
+
+    <select id="queryCardInfoDoByCardCode" parameterType="java.lang.String" resultMap="cardDocMap">
+        SELECT  <include refid="card_columns" />
+        FROM GPCS_INSIDER G
+        WHERE G.INSIDERCARDNO = #{cardCode}
+    </select>
+
+    <select id="queryCardInfoDoByCardId" parameterType="java.lang.String" resultMap="cardDocMap">
+        SELECT  <include refid="card_columns" />
+        FROM GPCS_INSIDER G
+        WHERE G.INSIDERID = #{cardId}
+    </select>
+
+    <select id="queryCardInfoDoByCardIds" parameterType="java.util.Map" resultMap="cardDocMap">
+        SELECT  <include refid="card_columns" />
+        FROM GPCS_INSIDER G
+        WHERE  G.INSIDERID in
+        <foreach collection="cardIds" item="ids" index="index" open="(" close=")" separator=",">
+            #{ids}
+        </foreach>
+    </select>
+
+    <update id="updateUnStatusByCardId" parameterType="java.lang.String">
+        UPDATE GPCS_INSIDER G SET G.SEX = 1,G.USESTATUS = 1 WHERE G.INSIDERID = #{cardId}
+    </update>
+    
+    <update id="updateCardInfoById" parameterType="com.qw.erp.eneity.ErpCardInfoDo">
+        update GPCS_INSIDER
+        set INSIDERNAME=#{name},
+          opcode =#{opcode},
+          mobile=#{mobile},
+          --credate=sysdate,
+          bkdate=sysdate,
+          comefrom = 1     --线上生成的卡
+        <if test="null != orgId and orgId != ''">
+            ,placepointid=#{orgId}
+        </if>
+
+         WHERE INSIDERID=#{cardId}
+    </update>
+
+    <update id="updateBindDateById" parameterType="java.util.Map">
+        update GPCS_INSIDER set bkdate=sysdate WHERE INSIDERID=#{cardId} AND bkdate is null
+    </update>
+
+    <update id="insertLog" parameterType="java.util.Map">
+        insert into np_update_log
+        (Seqid, tablename, credate, userid, username, updatelog, pkvalue)
+        values
+        (np_update_log_seq.nextval,#{tableName} , sysdate, #{userId}, #{userName}, #{updatelog}, #{pkvalue})
+
+    </update>
+
+    <select id="querySyncCardInfo" parameterType="java.util.Map" resultMap="cardDocMap">
+        SELECT  <include refid="card_columns" />
+         FROM GPCS_INSIDER G
+        WHERE G.INSIDERID IN(SELECT INSIDERID FROM GPCS_INSIDER_INTEGRALINFO GII WHERE GII.CREDATE &gt; TRUNC(SYSDATE)-#{day})
+    </select>
+
+
+
+    <select id="queryPuanHqBjfSeq" resultType="java.lang.String">
+        select PUAN_HQ_BJF_SEQ.nextval from dual
+    </select>
+
+    <insert id="insertPuanHyBjf" parameterType="java.util.Map">
+        insert into PUAN_HY_BJF
+        (id, insiderid, jf, rsaid, llr, rq, bjfyy, zt, placepointid)
+        values
+        (#{id}, #{cardId}, #{score}, #{rsaid}, #{llr}, sysdate, #{bjfyy}, #{zt}, #{placepointid})
+    </insert>
+
+    <insert id="insertGpcsInsiderIntegralinfo" parameterType="java.util.Map">
+        insert into gpcs_insider_integralinfo
+        (infoid, insiderid, comefrom, docid, credate, thismoney, thisintegral, debitintegal, lenderintegal)
+        select gpcs_insider_integralinfo_seq.nextval,
+        insiderid,
+        4,
+        rsaid as docid,
+        sysdate,
+        0,
+        null,
+        #{debitintegal},
+        #{lenderintegal}
+        from puan_hy_bjf
+        where id =#{id}
+    </insert>
+
+    <update id="updateScore" parameterType="java.util.Map">
+        update gpcs_insider a
+           set a.integral = nvl(a.integral, 0) + #{integral},
+               a.addintegral = nvl(a.addintegral, 0) + #{addintegral}
+        where a.insiderid = #{cardId}
+    </update>
+
+    <update id="updatePuanHyBjf" parameterType="java.lang.String">
+        update puan_hy_bjf set zt=2 where id =#{id}
+    </update>
+</mapper>

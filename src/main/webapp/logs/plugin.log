@@ -1,0 +1,5 @@
+2018-01-02 at 19:40:35 CST DEBUG com.qw.sign.ParamFilter 78 doFilter - sign check for html5 =========> 请求参数中不包含Sign：H5请求，校验Referer
+2018-01-02 at 19:40:35 CST DEBUG com.qw.sign.ParamFilter 82 doFilter - sign check for html5 =========> Doamin/Referer:0.1/
+2018-01-02 at 19:40:35 CST WARN  com.qw.sign.ParamFilter 102 checkSignFailPrint - Ooops, signature verification failed. Try again.
+2018-01-02 at 19:41:17 CST DEBUG com.qw.erp.controller.ErpMemberController 43 generateCard - -->begin params={rows=10, page=1, mobile=18012629960}
+2018-01-02 at 19:41:53 CST DEBUG com.qw.erp.controller.ErpMemberController 43 generateCard - -->begin params={rows=10, page=1, mobile=18012629960}

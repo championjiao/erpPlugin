@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration status="error">
+    <appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %class{36} %L %M - %msg%xEx%n"/>
+        </Console>
+        <File name="Error" fileName="${web:rootDir}/logs/plugin_error.log" append="false">
+            <ThresholdFilter level="error" onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout charset="UTF-8" pattern="%d{yyyy-MM-dd 'at' HH:mm:ss.SSS} %-5level %class{36} %L %M - %msg%xEx%n"/>
+        </File>
+
+        <RollingFile name="RollingFile" fileName="${web:rootDir}/logs/plugin.log"
+                     filePattern="${web:rootDir}/logs/$${date:yyyy-MM-dd}/plugin-%d{yyyy-MM-dd}-%i.log">
+            <PatternLayout charset="UTF-8" pattern="%d{yyyy-MM-dd 'at' HH:mm:ss z} %-5level %class{36} %L %M - %msg%xEx%n"/>
+
+            <Policies>
+                <TimeBasedTriggeringPolicy modulate="true" interval="1" />
+                <SizeBasedTriggeringPolicy size="500M" />
+            </Policies>
+        </RollingFile>
+    </appenders>
+
+    <loggers>
+        <logger name="com.qw.erp.dao" level="DEBUG" additivity="false">
+            <appender-ref ref="Console"/>
+        </logger>
+        <root level="trace">
+            <appender-ref ref="Error"/>
+            <appender-ref ref="RollingFile"/>
+            <appender-ref ref="Console"/>
+        </root>
+    </loggers>
+</configuration>

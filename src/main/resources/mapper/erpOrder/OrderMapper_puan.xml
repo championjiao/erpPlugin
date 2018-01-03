@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="orderMapper_puan">
+
+    <resultMap id="erpOrderMap" type="com.qw.erp.eneity.ErpOrderDo">
+        <!--BillNo	单据ID-->
+        <result property="ordNo"   column="RSAID" jdbcType="VARCHAR"/>
+        <result property="orgId"    column="PLACEPOINTID" jdbcType="VARCHAR"/>
+        <result property="orgName"  column="PLACEPOINTNAME" jdbcType="VARCHAR"/>
+        <!--ContactId	顾客ID-->
+        <result property="erpCardId" column="INSIDERID" jdbcType="VARCHAR"/>
+        <result property="erpCardCode" column="INSIDERCARDNO" jdbcType="VARCHAR"/>
+        <result property="erpCardName" column="CARDTYPENAME" jdbcType="VARCHAR"/>
+        <result property="mobile" column="MOBILE" jdbcType="VARCHAR"/>
+        <result property="userName" column="INSIDERNAME" jdbcType="VARCHAR"/>
+        <result property="score" column="THISINTEGRAL" jdbcType="VARCHAR"/>
+        <!--Dates	日期-->
+        <result property="dateTime" column="CREDATE" jdbcType="VARCHAR"/>
+        <!--PaidInAmt	实收金额-->
+        <result property="amountFanal" column="REALMONEY" jdbcType="VARCHAR"/>
+        <!--DisAmt	应收金额-->
+        <result property="amountPro" column="RECEIVALMONEY" jdbcType="VARCHAR"/>
+        <collection property="orderDetails" column="{billNo=RSAID}" select="queryOrderDetails"/>
+    </resultMap>
+
+    <!--查询当天订单数据-->
+    <select id="queryErpOrder4AfterDate" parameterType="java.util.Map" resultMap="erpOrderMap">
+        select  GSD.RSAID,             --订单id
+                GSD.PLACEPOINTID,      --门店id
+                GP.PLACEPOINTNAME,     --门店名称
+                GSD.INSIDERID,         --会员id
+                GI.MOBILE,             --会员手机号码
+                GI.INSIDERCARDNO,      --会员卡编码
+                GIC.CARDTYPENAME,      --会员卡名称
+                GI.INSIDERNAME,        --会员姓名
+                GSD.RECEIVALMONEY,     --应收金额
+                GSD.REALMONEY,        --实收金额
+                GSD.THISINTEGRAL,     --本次会员积分
+        TO_CHAR(GSD.CREDATE,'yyyy-mm-dd hh24:mi:ss') AS CREDATE
+        FROM GRESA_SA_DOC GSD
+        LEFT JOIN  GPCS_PLACEPOINT GP ON GP.PLACEPOINTID = GSD.PLACEPOINTID
+        LEFT JOIN  GPCS_INSIDER GI ON GI.INSIDERID = GSD.INSIDERID
+        LEFT JOIN GPCS_INSIDER_CARDTYPE GIC ON GIC.INSCARDTYPEID =  GI.INSCARDTYPEID
+        WHERE GSD.USESTATUS=1
+        AND GSD.RSATYPE=1
+        AND GI.MOBILE IS NOT NULL
+        AND GSD.CREDATE BETWEEN TO_DATE(#{beginDate}, 'yyyy-MM-dd HH24:mi:ss') AND TO_DATE(#{endDate}, 'yyyy-MM-dd HH24:mi:ss')
+        ORDER BY GSD.CREDATE
+    </select>
+
+    <!--erp 查询某个订单的商品交易记录-->
+    <resultMap id="orderDetailMap" type="com.qw.erp.eneity.ErpOrderDetailDo">
+        <result property="ordNo"    column="RSAID"      jdbcType="VARCHAR"/>
+        <result property="proCode"  column="GOODSID"    jdbcType="VARCHAR"/>
+        <result property="proQty"   column="GOODSQTY"   jdbcType="VARCHAR"/>
+        <result property="proName"  column="GOODSNAME"  jdbcType="VARCHAR"/>
+        <result property="price"    column="unitprice"  jdbcType="VARCHAR"/>
+    </resultMap>
+    <!--查询当天订单数据里的商品信息-->
+    <select id="queryOrderDetails" parameterType="java.util.Map" resultMap="orderDetailMap">
+        select
+        GSD.RSAID,             --订单id
+        GSD.GOODSID,           --商品编码
+        GSD.GOODSQTY,          --货品数量
+        PG.GOODSNAME,          --货品名称
+        GSD.unitprice
+        from gresa_sa_dtl GSD
+        LEFT JOIN  pub_goods PG ON PG.GOODSID = GSD.GOODSID
+        where GSD.RSAID = #{billNo}
+    </select>
+</mapper>

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="proMapper_puan">
+
+    <!--商品信息 库存和价格-->
+    <resultMap id="productMap" type="com.qw.erp.eneity.ErpBranchProInfoDo">
+        <result property="orgId"            column="placepointid"       jdbcType="VARCHAR"/>
+        <result property="price"            column="price"              jdbcType="VARCHAR"/>
+        <result property="stock"            column="goodsqty"           jdbcType="VARCHAR"/>
+        <result property="proCode"          column="goodsid"            jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <select id="queryProductInfo"  parameterType="java.util.Map" resultMap="productMap">
+        select napv.placepointid,
+        napv.goodsid, --商品编号
+        napv.price, --商品零售价
+        (select sum(goodsqty)
+        from BMS_ST_QTY_LST_V
+        where storageid = (select storageid
+        from gpcs_placepoint
+        where placepointid=napv.placepointid)
+        and goodsid=napv.goodsid
+        group by goodsid) goodsqty --库存 货位数量
+        from NGPCS_ALL_PRICE_V napv
+        where
+        (
+        EXISTS (SELECT 1 FROM v_ydej_bms_st_io ybs
+                          WHERE ybs.placepointid = napv.placepointid
+                          AND ybs.goodsid = napv.goodsid
+                          AND ybs.credate > sysdate - 2)
+        OR
+        EXISTS (SELECT * FROM NGPCS_PR_ALTER_DTL_V adv
+                          where adv.pralterid in (select pralterid FROM NGPCS_PR_ALTER_DOC_V where credate > sysdate - 2)
+                          and adv.goodsid = napv.goodsid)
+        )
+        AND napv.placepointid=#{orgId}
+        <if test="proCodeList != null">
+            AND napv.goodsid  in
+            <foreach collection="proCodeList" item="proCode" index="index" open="(" close=")" separator=",">
+                #{proCode}
+            </foreach>
+        </if>
+    </select>
+
+
+    <select id="queryProductInfoByBranch"  parameterType="java.util.Map" resultMap="productMap">
+      SELECT * FROM(
+      select rownum rn,tmp.*  from (
+        select napv.placepointid,
+        napv.goodsid, --商品编号
+        napv.price, --商品零售价
+        (select sum(goodsqty)
+        from BMS_ST_QTY_LST_V
+        where storageid = (select storageid
+        from gpcs_placepoint
+        where placepointid=napv.placepointid)
+        and goodsid=napv.goodsid
+        group by goodsid) goodsqty --库存 货位数量
+        from NGPCS_ALL_PRICE_V napv
+        where
+        (
+        EXISTS (SELECT 1 FROM v_ydej_bms_st_io ybs
+        WHERE ybs.placepointid = napv.placepointid
+        AND ybs.goodsid = napv.goodsid
+        AND ybs.credate > sysdate - 3)
+        OR
+        EXISTS (SELECT * FROM NGPCS_PR_ALTER_DTL_V adv
+        where adv.pralterid in (select pralterid FROM NGPCS_PR_ALTER_DOC_V where credate > sysdate - 3)
+        and adv.goodsid = napv.goodsid)
+        )
+        AND napv.placepointid=#{orgId}
+        order by napv.goodsid )tmp
+        ) where rn BETWEEN #{pageStart} AND #{pageEnd}
+    </select>
+
+    <select id="queryProductInfoCountByBranch"  parameterType="java.util.Map" resultType="java.lang.Integer">
+        select count(*)
+        from NGPCS_ALL_PRICE_V napv
+        where
+        (
+        EXISTS (SELECT 1 FROM v_ydej_bms_st_io ybs
+        WHERE ybs.placepointid = napv.placepointid
+        AND ybs.goodsid = napv.goodsid
+        AND ybs.credate > sysdate - 3)
+        OR
+        EXISTS (SELECT * FROM NGPCS_PR_ALTER_DTL_V adv
+        where adv.pralterid in (select pralterid FROM NGPCS_PR_ALTER_DOC_V where credate > sysdate - 3)
+        and adv.goodsid = napv.goodsid)
+        )
+        AND napv.placepointid=#{orgId}
+    </select>
+
+</mapper>
